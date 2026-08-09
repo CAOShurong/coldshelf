@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Test
+        run: go test -count=1 ./...
+
+      - name: Race detector
+        if: runner.os == 'Linux'
+        run: go test -race -count=1 ./...
+
+  quality:
+    name: Formatting, vet, web, and release smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Check formatting
+        shell: bash
+        run: test -z "$(gofmt -l ./cmd ./internal ./web ./build)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Scan reachable Go vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
+
+      - name: Check dependency licenses
+        run: go run github.com/google/go-licenses/v2@v2.0.1 check ./cmd/coldshelf
+
+      - name: Verify module files are tidy
+        shell: bash
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: Check browser JavaScript syntax
+        run: node --check web/static/app.js
+
+      - name: Build all release targets
+        run: go run ./build/release.go --version 0.0.0-ci --output dist
+
+      - name: Upload cross-platform smoke artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coldshelf-ci-binaries
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error

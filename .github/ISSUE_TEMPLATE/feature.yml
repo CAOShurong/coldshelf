@@ -1,0 +1,38 @@
+name: Feature request
+description: Propose a focused workflow improvement for offline-drive cataloging.
+title: "feature: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe what happens today, who encounters it, and how often.
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Desired workflow
+      description: Walk through the smallest useful interaction.
+    validations:
+      required: true
+  - type: input
+    id: scale
+    attributes:
+      label: Expected scale
+      placeholder: 18 drives, about 4 million entries, Windows and Linux
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing ColdShelf commands, other tools, or a simpler data export.
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Project boundary
+      options:
+        - label: This keeps source-media access read-only.
+          required: true
+        - label: This is about locating offline media, not replacing backups or an always-online NAS.
+          required: true

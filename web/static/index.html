@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#172019" />
+    <meta name="description" content="Search files on unplugged drives with ColdShelf." />
+    <title>ColdShelf — know which unplugged drive holds your file</title>
+    <link rel="icon" href="/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#dashboard" aria-label="ColdShelf dashboard">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span><strong>ColdShelf</strong><small>Offline drive catalog</small></span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <button class="nav-item active" data-view="dashboard">
+            <span class="nav-icon" aria-hidden="true">⌂</span><span>Library</span>
+          </button>
+          <button class="nav-item" data-view="search">
+            <span class="nav-icon" aria-hidden="true">⌕</span><span>Search all files</span>
+            <kbd>/</kbd>
+          </button>
+          <button class="nav-item" data-view="duplicates">
+            <span class="nav-icon" aria-hidden="true">◫</span><span>Exact duplicates</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-section">
+          <div class="sidebar-heading"><span>Offline drives</span><span id="drive-count-badge">0</span></div>
+          <div id="drive-nav" class="drive-nav"></div>
+        </div>
+
+        <div class="privacy-card">
+          <span class="privacy-dot" aria-hidden="true"></span>
+          <div><strong>Local by design</strong><small>Loopback only · no telemetry</small></div>
+        </div>
+      </aside>
+
+      <main id="main" class="main-content">
+        <header class="topbar">
+          <div class="mobile-brand"><span class="brand-mark small"><span></span></span><strong>ColdShelf</strong></div>
+          <label class="global-search">
+            <span aria-hidden="true">⌕</span>
+            <input id="global-search" type="search" placeholder="Find any file across unplugged drives…" autocomplete="off" />
+            <kbd>⌘ /</kbd>
+          </label>
+          <button id="scan-button" class="button primary"><span aria-hidden="true">＋</span> Scan a drive</button>
+        </header>
+
+        <section id="view-dashboard" class="view active" aria-labelledby="dashboard-title">
+          <div class="hero-row">
+            <div>
+              <p class="eyebrow">Your physical archive, finally searchable</p>
+              <h1 id="dashboard-title">Know what’s on the shelf.</h1>
+              <p class="lede">Scan a drive once. Search and browse its files later—even when the cable is in a drawer.</p>
+            </div>
+            <div class="hero-actions">
+              <button class="button secondary" id="export-json">Export JSON</button>
+              <button class="button ghost" id="export-csv">CSV</button>
+            </div>
+          </div>
+
+          <div class="metrics" id="metrics">
+            <article class="metric"><span class="metric-label">Drives cataloged</span><strong id="metric-drives">—</strong><small>offline & ready</small></article>
+            <article class="metric"><span class="metric-label">Files searchable</span><strong id="metric-files">—</strong><small>latest snapshots</small></article>
+            <article class="metric accent"><span class="metric-label">Archive size</span><strong id="metric-bytes">—</strong><small>across every shelf</small></article>
+            <article class="metric"><span class="metric-label">Snapshots</span><strong id="metric-snapshots">—</strong><small>changes remembered</small></article>
+          </div>
+
+          <div class="section-heading">
+            <div><p class="eyebrow">The shelf</p><h2>Your drives</h2></div>
+            <button class="text-button" id="refresh-library">Refresh ↻</button>
+          </div>
+          <div id="drive-grid" class="drive-grid" aria-live="polite"></div>
+
+          <div class="dashboard-lower">
+            <section class="panel distribution-panel">
+              <div class="panel-heading"><div><p class="eyebrow">Storage map</p><h2>What takes up space</h2></div><span class="subtle">Latest snapshots</span></div>
+              <div id="extension-chart" class="extension-chart"></div>
+            </section>
+            <section class="panel field-note">
+              <span class="field-note-number">01</span>
+              <p class="eyebrow">Field note</p>
+              <h2>Label the hardware, not your memory.</h2>
+              <p>Every drive gets a stable ColdShelf ID and a printable QR label. Put the label on the case; keep the catalog on your computer.</p>
+              <button class="text-button" id="field-note-action">Open a drive to print its label →</button>
+            </section>
+          </div>
+        </section>
+
+        <section id="view-search" class="view" aria-labelledby="search-title">
+          <div class="page-heading"><p class="eyebrow">Across every catalog</p><h1 id="search-title">Search the whole shelf</h1><p>Names and complete paths are indexed locally. Prefix matching works as you type.</p></div>
+          <label class="search-stage">
+            <span aria-hidden="true">⌕</span>
+            <input id="search-stage-input" type="search" placeholder="Try: invoice, footage, thesis…" autocomplete="off" />
+          </label>
+          <div id="search-summary" class="result-summary">Start typing to search all latest snapshots.</div>
+          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Drive</th><th>Path</th><th>Size</th><th>Modified</th></tr></thead><tbody id="search-results"></tbody></table></div>
+        </section>
+
+        <section id="view-drive" class="view" aria-labelledby="drive-title">
+          <div class="drive-detail-head">
+            <div><button class="back-button" data-view="dashboard">← Library</button><p id="drive-id" class="eyebrow"></p><h1 id="drive-title">Drive</h1><p id="drive-meta" class="lede"></p></div>
+            <div class="hero-actions"><button id="rescan-drive" class="button primary">Rescan</button><a id="drive-label" class="button secondary" target="_blank" rel="noopener">Print QR label</a></div>
+          </div>
+          <div class="drive-info-strip">
+            <div><span>Physical location</span><strong id="drive-location">Not recorded</strong></div>
+            <div><span>Last snapshot</span><strong id="drive-last-scan">Never</strong></div>
+            <div><span>Catalog ID</span><strong id="drive-catalog-id">—</strong></div>
+          </div>
+          <div class="browser-toolbar">
+            <div id="breadcrumbs" class="breadcrumbs"></div>
+            <div><button id="show-history" class="button ghost">Snapshot history</button></div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Modified</th><th>Fingerprint</th></tr></thead><tbody id="entry-results"></tbody></table></div>
+          <div id="history-panel" class="panel history-panel hidden"></div>
+        </section>
+
+        <section id="view-duplicates" class="view" aria-labelledby="duplicates-title">
+          <div class="page-heading"><p class="eyebrow">Byte-for-byte certainty</p><h1 id="duplicates-title">Exact duplicates</h1><p>Only files with complete SHA-256 hashes appear here. Quick fingerprints are deliberately excluded.</p></div>
+          <div id="duplicate-list" class="duplicate-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="scan-dialog" class="scan-dialog">
+      <form id="scan-form" method="dialog">
+        <div class="dialog-head"><div><p class="eyebrow">Read-only inventory</p><h2>Scan a mounted drive</h2></div><button type="button" class="icon-button" id="close-scan" aria-label="Close">×</button></div>
+        <p class="dialog-copy">ColdShelf reads names and metadata. It never changes files on the selected drive.</p>
+        <input id="scan-drive-id" type="hidden" />
+        <label><span>Mounted path</span><input id="scan-path" name="path" required placeholder="D:\ or /Volumes/Archive-01" /></label>
+        <div class="form-row">
+          <label><span>Drive name</span><input id="scan-name" name="name" placeholder="Archive 01" /></label>
+          <label><span>Physical location</span><input id="scan-location" name="location" placeholder="Blue case · shelf B" /></label>
+        </div>
+        <label><span>Tags</span><input id="scan-tags" name="tags" placeholder="video, client-work, 2025" /></label>
+        <label><span>Fingerprinting</span><select id="scan-hash" name="hash_mode"><option value="none">Metadata only — fastest</option><option value="quick">Quick fingerprint — first + last 64 KB</option><option value="full">Full SHA-256 — exact duplicates</option></select></label>
+        <div id="scan-progress" class="scan-progress hidden"><div><span id="scan-progress-label">Preparing scan…</span><strong id="scan-progress-count">0 files</strong></div><div class="progress-track"><span></span></div></div>
+        <div class="dialog-actions"><button type="button" class="button ghost" id="cancel-scan">Cancel</button><button type="submit" class="button primary" id="start-scan">Start read-only scan</button></div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+# Build output
+/bin/
+/dist/
+/coverage.out
+*.prof
+*.log
+
+# Local ColdShelf catalogs
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Local tools and editor files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.exe

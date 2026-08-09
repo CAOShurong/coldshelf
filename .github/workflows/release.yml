@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    name: Build, attest, and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Validate tag
+        shell: bash
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
+
+      - name: Test release source
+        run: go test -count=1 ./...
+
+      - name: Build deterministic archives
+        env:
+          SOURCE_DATE_EPOCH: "2026-08-09T00:00:00Z"
+        run: go run ./build/release.go --version "${GITHUB_REF_NAME#v}" --output dist
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0.24.0
+        with:
+          path: ./dist
+          format: spdx-json
+          output-file: ./dist/coldshelf_${{ github.ref_name }}.spdx.json
+          artifact-name: coldshelf_${{ github.ref_name }}.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: true
+
+      - name: Attest release archives
+        uses: actions/attest@v4.1.1
+        with:
+          subject-checksums: dist/SHA256SUMS
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --verify-tag \
+            --title "ColdShelf $GITHUB_REF_NAME" \
+            --generate-notes
