@@ -13,7 +13,9 @@ ColdShelf catalogs file names and paths, which may reveal client names, personal
 
 ### Source media
 
-The scanner uses read-only filesystem calls and optional reads for hashing. It has no source-file write, rename, move, chmod, or delete path. Symbolic links are not followed. A path supplied by the user must resolve to a directory.
+The scanner uses read-only filesystem calls and optional reads for hashing. It has no source-file write, rename, move, chmod, or delete path. Symbolic links are not followed. The HTTP API rejects empty, relative, and non-directory scan paths.
+
+An absolute scan path is a privileged user choice, not an untrusted file name that ColdShelf confines to an application-owned folder. Cataloging any mounted directory readable by the current OS user is the product's purpose. ColdShelf therefore does not sandbox a selected root; it relies on the user's filesystem permissions and records metadata below that root only.
 
 ### Local HTTP API
 
