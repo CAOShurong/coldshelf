@@ -11,7 +11,7 @@ Thank you for helping make offline archives easier to navigate. Focused bug repo
 
 ## Development setup
 
-Install Go 1.25 or newer, then run:
+Install Go 1.25.12 or newer, then run:
 
 ```console
 go test ./...
