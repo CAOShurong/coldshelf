@@ -50,7 +50,9 @@ You can also start from the interface: run `coldshelf serve`, choose **Scan a dr
 
 ### Build from source
 
-Go 1.25 or newer is enough; the browser interface is already embedded.
+Go 1.25.12 or newer is enough; the browser interface is already embedded. The
+patch-level minimum keeps release binaries on a Go standard library with the
+current security fixes.
 
 ```console
 git clone https://github.com/CAOShurong/coldshelf.git
