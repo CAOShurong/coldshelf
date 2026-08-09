@@ -4,6 +4,15 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-09
+
+### Fixed
+
+- Release SBOMs now inventory the Go modules and standard library inside the
+  packaged Linux binary instead of describing only the archive directory.
+- Release automation now fails closed if the dependency inventory is missing
+  ColdShelf's key runtime modules.
+
 ## [0.1.0] - 2026-08-09
 
 ### Added
@@ -18,5 +27,6 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 - Loopback enforcement, Host/Origin validation, CSP, and documented threat model.
 - Windows, macOS, and Linux CI; CodeQL; deterministic archives; checksums; and release SBOM.
 
-[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/CAOShurong/coldshelf/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/CAOShurong/coldshelf/releases/tag/v0.1.0
