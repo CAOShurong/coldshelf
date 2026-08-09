@@ -31,24 +31,38 @@ jobs:
         run: |
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
 
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Test release source
         run: go test -count=1 ./...
 
       - name: Build deterministic archives
         env:
           SOURCE_DATE_EPOCH: "2026-08-09T00:00:00Z"
-        run: go run ./build/release.go --version "${GITHUB_REF_NAME#v}" --output dist
+        run: go run ./build/release.go --version "${{ steps.version.outputs.value }}" --output dist
 
       - name: Generate SPDX SBOM
         uses: anchore/sbom-action@v0.24.0
         with:
-          path: ./dist
+          file: ./dist/coldshelf_${{ steps.version.outputs.value }}_linux_amd64.tar.gz
           format: spdx-json
           output-file: ./dist/coldshelf_${{ github.ref_name }}.spdx.json
           artifact-name: coldshelf_${{ github.ref_name }}.spdx.json
           upload-artifact: false
           upload-release-assets: false
           dependency-snapshot: true
+
+      - name: Validate SBOM inventory
+        shell: bash
+        run: |
+          sbom="dist/coldshelf_${GITHUB_REF_NAME}.spdx.json"
+          jq -e '.packages | length > 5' "$sbom" >/dev/null
+          jq -e '.packages | any(.name == "modernc.org/sqlite")' "$sbom" >/dev/null
+          jq -e '.packages | any(.name == "github.com/skip2/go-qrcode")' "$sbom" >/dev/null
+          jq -e '.packages | any(.name == "stdlib")' "$sbom" >/dev/null
 
       - name: Attest release archives
         uses: actions/attest@v4.2.2
