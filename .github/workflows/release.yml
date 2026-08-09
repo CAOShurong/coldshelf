@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -51,7 +51,7 @@ jobs:
           dependency-snapshot: true
 
       - name: Attest release archives
-        uses: actions/attest@v4.1.1
+        uses: actions/attest@v4.2.2
         with:
           subject-checksums: dist/SHA256SUMS
 
