@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -47,11 +48,20 @@ func TestAPIAndSecurityBoundary(t *testing.T) {
 		t.Fatalf("expected hostile Host rejection, got %d", response.Code)
 	}
 
+	payload, _ := json.Marshal(server.ScanRequest{Name: "Ambiguous Drive", Path: filepath.Join("relative", "path")})
+	request = httptest.NewRequest(http.MethodPost, "http://localhost/api/scans", bytes.NewReader(payload))
+	request.Header.Set("Content-Type", "application/json")
+	response = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "must be absolute") {
+		t.Fatalf("expected relative scan path rejection, got %d %s", response.Code, response.Body.String())
+	}
+
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, "needle.txt"), []byte("found"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	payload, _ := json.Marshal(server.ScanRequest{Name: "Test Drive", Path: root, HashMode: "full"})
+	payload, _ = json.Marshal(server.ScanRequest{Name: "Test Drive", Path: root, HashMode: "full"})
 	request = httptest.NewRequest(http.MethodPost, "http://localhost/api/scans", bytes.NewReader(payload))
 	request.Header.Set("Content-Type", "application/json")
 	response = httptest.NewRecorder()

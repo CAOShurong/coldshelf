@@ -48,10 +48,17 @@ func newJobManager(c *catalog.Catalog) *jobManager {
 }
 
 func (m *jobManager) Start(input ScanRequest) (ScanJob, error) {
-	root, err := filepath.Abs(strings.TrimSpace(input.Path))
-	if err != nil {
-		return ScanJob{}, fmt.Errorf("resolve scan path: %w", err)
+	rawPath := strings.TrimSpace(input.Path)
+	if rawPath == "" {
+		return ScanJob{}, fmt.Errorf("scan path is required")
 	}
+	if strings.ContainsRune(rawPath, '\x00') {
+		return ScanJob{}, fmt.Errorf("scan path contains an invalid NUL byte")
+	}
+	if !filepath.IsAbs(rawPath) {
+		return ScanJob{}, fmt.Errorf("scan path must be absolute")
+	}
+	root := filepath.Clean(rawPath)
 	if input.HashMode == "" {
 		input.HashMode = string(scanner.HashNone)
 	}

@@ -4,6 +4,14 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+### Security
+
+- The local HTTP scan endpoint now rejects empty, relative, and NUL-containing
+  paths, so browser-submitted scans always name an explicit absolute root.
+- The threat model now makes the intentional path boundary explicit: users may
+  catalog any mounted directory their OS account can read, and source access
+  remains read-only.
+
 ## [0.1.1] - 2026-08-09
 
 ### Fixed
