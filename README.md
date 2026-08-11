@@ -154,7 +154,10 @@ It is not a file manager, backup program, recovery tool, media preview generator
 
 The `v0.1.x` line is an early public release. The on-disk schema is versioned, but backwards compatibility is not promised until `v1.0.0`. Before upgrading, copy the database or export JSON.
 
-Planned work is tracked in [ROADMAP.md](ROADMAP.md). The highest-value next steps are catalog import/merge, optional thumbnails with strict size limits, scanner benchmarks on multi-million-entry drives, and a properly authenticated remote mode.
+Planned work is tracked in [ROADMAP.md](ROADMAP.md). A reproducible million-entry
+catalog baseline now anchors performance work; the highest-value next steps are
+catalog import/merge, reducing measured ingestion cost, optional thumbnails with
+strict size limits, and a properly authenticated remote mode.
 
 ## Contributing
 
