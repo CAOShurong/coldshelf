@@ -2,9 +2,13 @@ package main
 
 import (
 	"io"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/CAOShurong/coldshelf/internal/catalog"
 )
 
 func TestNormalizeCommandArgsKeepsBareLaunchInteractive(t *testing.T) {
@@ -92,6 +96,89 @@ func TestInterspersedFlags(t *testing.T) {
 	want := []string{"--from", "1", "--json", "--to=2", "Archive Drive"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %#v, want %#v", got, want)
+	}
+}
+
+func TestParseImportCatalogOptionsSupportsInterspersedFlags(t *testing.T) {
+	t.Parallel()
+	options, err := parseImportCatalogOptions([]string{
+		"source.db", "--db", "target.db", "--dry-run", "--rename-conflicts", "--trust-full-hashes", "--json",
+	}, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if options.sourcePath != "source.db" || options.dbPath != "target.db" {
+		t.Fatalf("unexpected paths: %#v", options)
+	}
+	if !options.dryRun || !options.renameConflicts || !options.trustFullHashes || !options.jsonOutput {
+		t.Fatalf("boolean flags were not parsed: %#v", options)
+	}
+}
+
+func TestParseImportCatalogOptionsRequiresOneSource(t *testing.T) {
+	t.Parallel()
+	for _, args := range [][]string{nil, {"first.db", "second.db"}} {
+		if _, err := parseImportCatalogOptions(args, io.Discard); err == nil {
+			t.Fatalf("expected usage error for %#v", args)
+		}
+	}
+}
+
+func TestImportCatalogDryRunDoesNotCreateOrChangeTarget(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	sourcePath := filepath.Join(root, "source.db")
+	source, err := catalog.Open(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := source.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	missingTarget := filepath.Join(root, "missing-target.db")
+	if err := importCatalogCommand([]string{sourcePath, "--db", missingTarget, "--dry-run"}, io.Discard, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(missingTarget); !os.IsNotExist(err) {
+		t.Fatalf("dry run created a missing target: %v", err)
+	}
+	for _, suffix := range []string{"-wal", "-shm"} {
+		if _, err := os.Stat(missingTarget + suffix); !os.IsNotExist(err) {
+			t.Fatalf("dry run created a missing target sidecar %s: %v", suffix, err)
+		}
+	}
+
+	existingTarget := filepath.Join(root, "existing-target.db")
+	target, err := catalog.Open(existingTarget)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := target.Close(); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(existingTarget)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := importCatalogCommand([]string{sourcePath, "--db", existingTarget, "--dry-run"}, io.Discard, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(existingTarget)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("dry run changed the bytes of an existing target")
+	}
+	for _, suffix := range []string{"-wal", "-shm"} {
+		if _, err := os.Stat(existingTarget + suffix); !os.IsNotExist(err) {
+			t.Fatalf("dry run created target sidecar %s: %v", suffix, err)
+		}
+	}
+
+	if err := importCatalogCommand([]string{sourcePath, "--db", sourcePath, "--dry-run"}, io.Discard, io.Discard); err == nil {
+		t.Fatal("dry-run self-import must be rejected")
 	}
 }
 

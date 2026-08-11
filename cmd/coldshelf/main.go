@@ -57,6 +57,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return exportCommand(args[1:], stdout, stderr)
 	case "import-efu":
 		return importEFUCommand(args[1:], stdout, stderr)
+	case "import-catalog":
+		return importCatalogCommand(args[1:], stdout, stderr)
 	case "demo":
 		return demoCommand(args[1:], stdout, stderr)
 	case "version", "--version", "-v":
@@ -89,6 +91,7 @@ Usage:
   coldshelf label DRIVE [--out label.svg]
   coldshelf export [--format json|csv] [--out FILE]
   coldshelf import-efu FILE --name NAME [--strip-prefix PATH]
+  coldshelf import-catalog FILE [--dry-run] [--rename-conflicts] [--trust-full-hashes]
   coldshelf demo [--db FILE] [--serve] [--open]
   coldshelf version
 
@@ -468,6 +471,93 @@ func importEFUCommand(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	fmt.Fprintf(stdout, "Imported %d files and %d folders (%s) into %s · snapshot %d\n", result.Files, result.Directories, humanBytes(result.Bytes), drive.Name, snapshot.ID)
+	return nil
+}
+
+type importCatalogOptions struct {
+	dbPath          string
+	sourcePath      string
+	renameConflicts bool
+	trustFullHashes bool
+	dryRun          bool
+	jsonOutput      bool
+}
+
+func parseImportCatalogOptions(args []string, stderr io.Writer) (importCatalogOptions, error) {
+	defaults, err := server.DefaultCatalogPath()
+	if err != nil {
+		return importCatalogOptions{}, err
+	}
+	flags := flag.NewFlagSet("import-catalog", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	dbPath := flags.String("db", defaults, "target catalog database path")
+	renameConflicts := flags.Bool("rename-conflicts", false, "rename a new drive when its name is already used")
+	trustFullHashes := flags.Bool("trust-full-hashes", false, "preserve imported full SHA-256 claims without rereading files")
+	dryRun := flags.Bool("dry-run", false, "validate and preview the merge without changing the target")
+	jsonOutput := flags.Bool("json", false, "print machine-readable JSON")
+	if err := flags.Parse(interspersed(args, "rename-conflicts", "trust-full-hashes", "dry-run", "json")); err != nil {
+		return importCatalogOptions{}, err
+	}
+	if flags.NArg() != 1 {
+		return importCatalogOptions{}, errors.New("usage: coldshelf import-catalog FILE [--dry-run] [--rename-conflicts] [--trust-full-hashes]")
+	}
+	return importCatalogOptions{
+		dbPath:          *dbPath,
+		sourcePath:      flags.Arg(0),
+		renameConflicts: *renameConflicts,
+		trustFullHashes: *trustFullHashes,
+		dryRun:          *dryRun,
+		jsonOutput:      *jsonOutput,
+	}, nil
+}
+
+func importCatalogCommand(args []string, stdout, stderr io.Writer) error {
+	options, err := parseImportCatalogOptions(args, stderr)
+	if err != nil {
+		return err
+	}
+	var target *catalog.Catalog
+	cleanup := func() error { return nil }
+	if options.dryRun {
+		target, cleanup, err = catalog.OpenImportPreview(options.dbPath)
+	} else {
+		target, err = catalog.OpenImportTarget(options.dbPath)
+	}
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	defer target.Close()
+	result, err := target.ImportCatalog(context.Background(), options.sourcePath, catalog.ImportCatalogOptions{
+		RenameConflicts: options.renameConflicts,
+		TrustFullHashes: options.trustFullHashes,
+		DryRun:          options.dryRun,
+	})
+	if err != nil {
+		return err
+	}
+	if options.jsonOutput {
+		return json.NewEncoder(stdout).Encode(result)
+	}
+	action := "Imported"
+	if result.DryRun {
+		action = "Would import"
+	}
+	fmt.Fprintf(stdout, "%s %d new and %d updated snapshot(s), plus %d entries from %s\n", action, result.SnapshotsImported, result.SnapshotsUpdated, result.EntriesImported, result.Source)
+	fmt.Fprintf(stdout, "  Drives:      %d new, %d existing\n", result.DrivesAdded, result.DrivesMerged)
+	fmt.Fprintf(stdout, "  Skipped:     %d already imported, %d incomplete\n", result.SnapshotsSkipped, result.IncompleteSnapshotsSkipped)
+	if result.FullHashesStripped > 0 {
+		fmt.Fprintf(stdout, "  Hashes:      %d unverified full SHA-256 value(s) removed\n", result.FullHashesStripped)
+	}
+	if result.FullHashesPreserved > 0 {
+		fmt.Fprintf(stdout, "  Hashes:      %d trusted full SHA-256 value(s) preserved\n", result.FullHashesPreserved)
+	}
+	for _, renamed := range result.RenamedDrives {
+		fmt.Fprintf(stdout, "  Renamed:     %s -> %s (%s)\n", renamed.From, renamed.To, renamed.DriveID)
+	}
+	if result.DryRun {
+		fmt.Fprintln(stdout, "  Target was not changed.")
+	}
 	return nil
 }
 

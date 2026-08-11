@@ -25,6 +25,7 @@ Readers continue to see the previous complete snapshot while the new transaction
 - `drives` holds stable ColdShelf IDs, user-facing names, source paths, physical locations, notes, and tags.
 - `snapshots` holds scan status, fingerprint mode, counts, size totals, timestamps, and read-error totals.
 - `entries` holds relative paths, parent paths, file type, size, modification time, and optional fingerprint.
+- `catalog_imports` records a source-snapshot identity, target snapshot, and full-hash trust policy so repeats are idempotent and policy changes update in place.
 - `entries_fts` is an external-content FTS5 index maintained by triggers. Search joins only entries belonging to each drive's latest snapshot.
 
 The schema version is stored in `metadata`. Every migration must be forward-only, transactional, and covered by a fixture created with the previous version before `v1.0.0`.
@@ -41,6 +42,28 @@ Symbolic links are recorded as links but never followed. Exclusions use slash-no
 - `sha256:<sha256>` reads the complete file. Only these values feed the exact-duplicate view.
 
 Prefixing the stored digest makes it impossible for a quick fingerprint to be silently interpreted as a complete hash.
+
+## Catalog merge transaction
+
+`import-catalog` requires a closed, checkpointed source without WAL sidecars,
+opens it in SQLite immutable read-only mode, and keeps one read transaction. It
+validates the source schema, SQLite integrity, foreign keys, stable drive IDs,
+relative paths, fingerprints, metadata, timestamps, and declared snapshot
+counts before committing anything. The target schema migration, drives,
+snapshots, entries, FTS rows, and import receipts are written in one target
+transaction. Any error rolls back the whole merge.
+
+Complete snapshots are copied in source order and their database-local snapshot
+IDs are remapped. Drive IDs remain stable. A receipt identity includes the
+source snapshot ID and content, preserving repeated identical scans while making
+an identical copied-catalog import a no-op. The receipt also records whether
+full hashes were trusted, so rerunning with a different policy updates that
+snapshot in place. The target catalog's existing drive metadata wins when a
+stable drive ID is already present.
+
+Dry runs use SQLite's online-backup API to copy a closed target into a uniquely
+named shared in-memory database. The same migration and merge code runs there;
+no target or temporary catalog file is created.
 
 ## HTTP boundary
 
