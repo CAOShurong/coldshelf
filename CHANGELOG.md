@@ -4,6 +4,8 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-11
+
 ### Added
 
 - Global search results now show the full catalog-relative path and provide an
@@ -40,6 +42,7 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 - Loopback enforcement, Host/Origin validation, CSP, and documented threat model.
 - Windows, macOS, and Linux CI; CodeQL; deterministic archives; checksums; and release SBOM.
 
-[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/CAOShurong/coldshelf/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/CAOShurong/coldshelf/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/CAOShurong/coldshelf/releases/tag/v0.1.0
