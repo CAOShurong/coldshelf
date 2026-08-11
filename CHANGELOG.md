@@ -4,6 +4,17 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-08-11
+
+### Added
+
+- Add an opt-in, fixed-seed one-million-entry catalog benchmark that verifies
+  exact-name, path-term, and no-match search counts before reporting ingestion,
+  search, storage, and allocation metrics.
+- Run a 10,000-entry scale smoke benchmark in CI while keeping the normal test
+  path fast, and document a reproducible one-million-entry Windows/NVMe baseline
+  with explicit limitations.
+
 ## [0.1.4] - 2026-08-11
 
 ### Fixed
@@ -58,7 +69,8 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 - Loopback enforcement, Host/Origin validation, CSP, and documented threat model.
 - Windows, macOS, and Linux CI; CodeQL; deterministic archives; checksums; and release SBOM.
 
-[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/CAOShurong/coldshelf/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/CAOShurong/coldshelf/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/CAOShurong/coldshelf/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/CAOShurong/coldshelf/compare/v0.1.1...v0.1.2

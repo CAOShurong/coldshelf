@@ -69,6 +69,11 @@ jobs:
           go mod tidy
           git diff --exit-code -- go.mod go.sum
 
+      - name: Run deterministic scale benchmark smoke
+        env:
+          COLDSHELF_BENCH_ENTRIES: "10000"
+        run: go test -run '^$' -bench '^BenchmarkCatalogScale$' -benchtime=1x -count=1 -benchmem ./internal/catalog
+
       - name: Check browser JavaScript syntax
         run: node --check web/static/app.js
 
