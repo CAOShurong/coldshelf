@@ -4,6 +4,14 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-08-11
+
+### Fixed
+
+- Release binaries now record the tagged commit time instead of a fixed date,
+  while remaining reproducible for the same source commit.
+- Changelog comparison links now include every published patch release.
+
 ## [0.1.3] - 2026-08-11
 
 ### Fixed
@@ -50,7 +58,9 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 - Loopback enforcement, Host/Origin validation, CSP, and documented threat model.
 - Windows, macOS, and Linux CI; CodeQL; deterministic archives; checksums; and release SBOM.
 
-[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/CAOShurong/coldshelf/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/CAOShurong/coldshelf/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/CAOShurong/coldshelf/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/CAOShurong/coldshelf/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/CAOShurong/coldshelf/releases/tag/v0.1.0

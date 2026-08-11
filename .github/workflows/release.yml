@@ -40,9 +40,10 @@ jobs:
         run: go test -count=1 ./...
 
       - name: Build deterministic archives
-        env:
-          SOURCE_DATE_EPOCH: "2026-08-09T00:00:00Z"
-        run: go run ./build/release.go --version "${{ steps.version.outputs.value }}" --output dist
+        shell: bash
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct HEAD)"
+          go run ./build/release.go --version "${{ steps.version.outputs.value }}" --output dist
 
       - name: Generate SPDX SBOM
         uses: anchore/sbom-action@v0.24.0

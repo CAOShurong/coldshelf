@@ -60,18 +60,9 @@ func buildAll(version, output string) error {
 	if commit == "" {
 		commit = "unknown"
 	}
-	buildDate := time.Now().UTC().Format(time.RFC3339)
-	if sourceDate := os.Getenv("SOURCE_DATE_EPOCH"); sourceDate != "" {
-		parsed, parseErr := time.Parse(time.RFC3339, sourceDate)
-		if parseErr != nil {
-			if seconds, err := strconv.ParseInt(sourceDate, 10, 64); err == nil {
-				parsed = time.Unix(seconds, 0)
-				parseErr = nil
-			}
-		}
-		if parseErr == nil {
-			buildDate = parsed.UTC().Format(time.RFC3339)
-		}
+	buildDate, err := resolveBuildDate()
+	if err != nil {
+		return err
 	}
 
 	archives := make([]string, 0, len(targets))
@@ -129,6 +120,25 @@ func buildAll(version, output string) error {
 		archives = append(archives, archive)
 	}
 	return writeChecksums(filepath.Join(absOutput, "SHA256SUMS"), archives)
+}
+
+func resolveBuildDate() (string, error) {
+	sourceDate := strings.TrimSpace(os.Getenv("SOURCE_DATE_EPOCH"))
+	if sourceDate == "" {
+		return time.Now().UTC().Format(time.RFC3339), nil
+	}
+	parsed, err := parseSourceDate(sourceDate)
+	if err != nil {
+		return "", fmt.Errorf("invalid SOURCE_DATE_EPOCH %q: expected RFC3339 or Unix seconds: %w", sourceDate, err)
+	}
+	return parsed.UTC().Format(time.RFC3339), nil
+}
+
+func parseSourceDate(value string) (time.Time, error) {
+	if seconds, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return time.Unix(seconds, 0).UTC(), nil
+	}
+	return time.Parse(time.RFC3339, value)
 }
 
 func writeZip(destination string, files map[string]string) error {
