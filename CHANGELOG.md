@@ -4,6 +4,8 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-11
+
 ### Fixed
 
 - Explicit `serve` and `demo --serve` commands now run without launching a
