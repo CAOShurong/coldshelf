@@ -37,16 +37,20 @@ Download the archive for your platform from [Releases](https://github.com/CAOShu
 ```console
 # Windows
 coldshelf.exe scan "D:\" --name "Archive 01" --location "Blue case · shelf B"
-coldshelf.exe serve
+coldshelf.exe serve --open
 
 # macOS / Linux
 ./coldshelf scan /Volumes/Archive-01 --name "Archive 01" --location "Blue case · shelf B"
-./coldshelf serve
+./coldshelf serve --open
 ```
 
-ColdShelf opens `http://127.0.0.1:4877`. The server refuses non-loopback addresses, so another device cannot read your catalog by accident.
+`--open` opens `http://127.0.0.1:4877` in your default browser. Omit it for
+background, service, or automated use: explicit `coldshelf serve` never launches
+a browser. Running `coldshelf` with no subcommand remains the convenient
+interactive shortcut and opens the interface. The server refuses non-loopback
+addresses, so another device cannot read your catalog by accident.
 
-You can also start from the interface: run `coldshelf serve`, choose **Scan a drive**, and enter its mounted path.
+You can also start from the interface: run `coldshelf`, choose **Scan a drive**, and enter its mounted path.
 
 ### Build from source
 
@@ -58,7 +62,7 @@ current security fixes.
 git clone https://github.com/CAOShurong/coldshelf.git
 cd coldshelf
 go build -trimpath -o coldshelf ./cmd/coldshelf
-./coldshelf demo --serve
+./coldshelf demo --serve --open
 ```
 
 The demo creates a disposable catalog with realistic offline-drive metadata. It does not create multi-terabyte fixture files.
@@ -90,7 +94,7 @@ coldshelf diff DRIVE --from SNAPSHOT --to SNAPSHOT [--json]
 coldshelf label DRIVE [--out label.svg]
 coldshelf export [--format json|csv] [--out FILE]
 coldshelf import-efu FILE --name NAME [--strip-prefix PATH]
-coldshelf demo [--db FILE] [--serve]
+coldshelf demo [--db FILE] [--serve] [--open]
 ```
 
 Flags may appear before or after positional arguments, so both `scan --hash full D:\` and `scan D:\ --hash full` work.

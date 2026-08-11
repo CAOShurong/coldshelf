@@ -39,9 +39,7 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) error {
-	if len(args) == 0 {
-		args = []string{"serve"}
-	}
+	args = normalizeCommandArgs(args)
 	switch args[0] {
 	case "serve":
 		return serveCommand(args[1:], stdout, stderr)
@@ -72,6 +70,13 @@ func run(args []string, stdout, stderr io.Writer) error {
 	}
 }
 
+func normalizeCommandArgs(args []string) []string {
+	if len(args) == 0 {
+		return []string{"serve", "--open"}
+	}
+	return args
+}
+
 func printUsage(w io.Writer) {
 	fmt.Fprintln(w, `ColdShelf — know which unplugged drive holds your file
 
@@ -84,26 +89,44 @@ Usage:
   coldshelf label DRIVE [--out label.svg]
   coldshelf export [--format json|csv] [--out FILE]
   coldshelf import-efu FILE --name NAME [--strip-prefix PATH]
-  coldshelf demo [--db FILE] [--serve]
+  coldshelf demo [--db FILE] [--serve] [--open]
   coldshelf version
 
 Run "coldshelf COMMAND --help" for command-specific options.`)
 }
 
-func serveCommand(args []string, stdout, stderr io.Writer) error {
+type serveOptions struct {
+	dbPath      string
+	listen      string
+	openBrowser bool
+}
+
+func parseServeOptions(args []string, stderr io.Writer) (serveOptions, error) {
 	defaults, err := server.DefaultCatalogPath()
 	if err != nil {
-		return err
+		return serveOptions{}, err
 	}
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	dbPath := flags.String("db", defaults, "catalog database path")
 	listen := flags.String("listen", "127.0.0.1:4877", "loopback address")
-	open := flags.Bool("open", true, "open the browser")
+	openBrowserFlag := flags.Bool("open", false, "open the browser")
 	if err := flags.Parse(args); err != nil {
+		return serveOptions{}, err
+	}
+	return serveOptions{
+		dbPath:      *dbPath,
+		listen:      *listen,
+		openBrowser: *openBrowserFlag,
+	}, nil
+}
+
+func serveCommand(args []string, stdout, stderr io.Writer) error {
+	options, err := parseServeOptions(args, stderr)
+	if err != nil {
 		return err
 	}
-	c, err := catalog.Open(*dbPath)
+	c, err := catalog.Open(options.dbPath)
 	if err != nil {
 		return err
 	}
@@ -114,17 +137,10 @@ func serveCommand(args []string, stdout, stderr io.Writer) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	url := "http://" + *listen
+	url := "http://" + options.listen
 	fmt.Fprintf(stdout, "ColdShelf %s\nCatalog: %s\nOpen:    %s\n", version, c.Path(), url)
-	if *open {
-		go func() {
-			time.Sleep(250 * time.Millisecond)
-			if err := openBrowser(url); err != nil {
-				fmt.Fprintln(stderr, "Could not open browser:", err)
-			}
-		}()
-	}
-	return srv.ListenAndServe(ctx, *listen)
+	openBrowserIfRequested(options.openBrowser, url, stderr, openBrowser, 250*time.Millisecond)
+	return srv.ListenAndServe(ctx, options.listen)
 }
 
 func scanCommand(args []string, stdout, stderr io.Writer) error {
@@ -455,16 +471,40 @@ func importEFUCommand(args []string, stdout, stderr io.Writer) error {
 	return nil
 }
 
-func demoCommand(args []string, stdout, stderr io.Writer) error {
+type demoOptions struct {
+	dbPath      string
+	listen      string
+	serve       bool
+	openBrowser bool
+}
+
+func parseDemoOptions(args []string, stderr io.Writer) (demoOptions, error) {
 	flags := flag.NewFlagSet("demo", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	dbPath := flags.String("db", "coldshelf-demo.db", "demo catalog path")
 	serve := flags.Bool("serve", false, "serve the demo after creating it")
 	listen := flags.String("listen", "127.0.0.1:4877", "loopback address")
+	openBrowserFlag := flags.Bool("open", false, "open the browser; requires --serve")
 	if err := flags.Parse(args); err != nil {
+		return demoOptions{}, err
+	}
+	if *openBrowserFlag && !*serve {
+		return demoOptions{}, errors.New("--open requires --serve")
+	}
+	return demoOptions{
+		dbPath:      *dbPath,
+		listen:      *listen,
+		serve:       *serve,
+		openBrowser: *openBrowserFlag,
+	}, nil
+}
+
+func demoCommand(args []string, stdout, stderr io.Writer) error {
+	options, err := parseDemoOptions(args, stderr)
+	if err != nil {
 		return err
 	}
-	abs, err := filepath.Abs(*dbPath)
+	abs, err := filepath.Abs(options.dbPath)
 	if err != nil {
 		return err
 	}
@@ -482,7 +522,7 @@ func demoCommand(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	fmt.Fprintf(stdout, "Demo catalog created: %s\n", abs)
-	if !*serve {
+	if !options.serve {
 		return c.Close()
 	}
 	srv, err := server.New(c, version)
@@ -493,11 +533,8 @@ func demoCommand(args []string, stdout, stderr io.Writer) error {
 	defer c.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	go func() {
-		time.Sleep(250 * time.Millisecond)
-		_ = openBrowser("http://" + *listen)
-	}()
-	return srv.ListenAndServe(ctx, *listen)
+	openBrowserIfRequested(options.openBrowser, "http://"+options.listen, stderr, openBrowser, 250*time.Millisecond)
+	return srv.ListenAndServe(ctx, options.listen)
 }
 
 func seedDemo(c *catalog.Catalog) error {
@@ -640,6 +677,18 @@ func humanBytes(value int64) string {
 		return strconv.FormatInt(value, 10) + " " + units[unit]
 	}
 	return fmt.Sprintf("%.2f %s", amount, units[unit])
+}
+
+func openBrowserIfRequested(enabled bool, url string, stderr io.Writer, opener func(string) error, delay time.Duration) {
+	if !enabled {
+		return
+	}
+	go func() {
+		time.Sleep(delay)
+		if err := opener(url); err != nil {
+			fmt.Fprintln(stderr, "Could not open browser:", err)
+		}
+	}()
 }
 
 func openBrowser(url string) error {
