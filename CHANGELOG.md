@@ -4,6 +4,12 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+### Fixed
+
+- Explicit `serve` and `demo --serve` commands now run without launching a
+  browser unless `--open` is supplied. Running `coldshelf` without a subcommand
+  still opens the interface for interactive use.
+
 ## [0.1.2] - 2026-08-11
 
 ### Added
