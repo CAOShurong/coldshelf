@@ -4,6 +4,11 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+### Added
+
+- Global search results now show the full catalog-relative path and provide an
+  accessible one-click copy action with non-modal success or failure feedback.
+
 ### Security
 
 - The local HTTP scan endpoint now rejects empty, relative, and NUL-containing

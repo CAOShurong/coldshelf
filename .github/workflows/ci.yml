@@ -72,6 +72,9 @@ jobs:
       - name: Check browser JavaScript syntax
         run: node --check web/static/app.js
 
+      - name: Test browser clipboard behavior
+        run: node --test web/app.test.mjs
+
       - name: Build all release targets
         run: go run ./build/release.go --version 0.0.0-ci --output dist
 

@@ -60,6 +60,30 @@ function showToast(message) {
   showToast.timer = setTimeout(() => toast.classList.remove("visible"), 3200);
 }
 
+function selectText(node) {
+  const selection = window.getSelection();
+  if (!selection || !node) return;
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+async function copyPath(path, pathNode) {
+  if (!navigator.clipboard?.writeText) {
+    selectText(pathNode);
+    showToast("Clipboard access is unavailable. Select the path and copy it manually.");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(path);
+    showToast("Path copied.");
+  } catch {
+    selectText(pathNode);
+    showToast("Could not copy the path. It is selected for manual copying.");
+  }
+}
+
 function showView(name) {
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${name}`));
   $$(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === name));
@@ -142,13 +166,20 @@ async function runSearch(query) {
   try {
     const hits = await api(`/api/search?q=${encodeURIComponent(query)}&limit=200`);
     $("#search-summary").textContent = `${formatCount(hits.length)} result${hits.length === 1 ? "" : "s"} for “${query}”`;
-    body.innerHTML = hits.length ? hits.map((hit) => `<tr>
+    body.innerHTML = hits.length ? hits.map((hit, index) => `<tr>
       <td><span class="file-name"><span class="file-icon">${fileIcon(hit.kind, hit.extension)}</span>${escapeHTML(hit.name)}</span></td>
       <td><button class="text-button" data-result-drive="${escapeHTML(hit.drive_id)}">${escapeHTML(hit.drive_name)}</button></td>
-      <td class="path-cell" title="${escapeHTML(hit.path)}">${escapeHTML(hit.parent_path || "/")}</td>
+      <td class="path-cell"><span class="path-content"><span class="path-text" title="${escapeHTML(hit.path)}">${escapeHTML(hit.path)}</span><button type="button" class="copy-path-button" data-copy-path-index="${index}">Copy</button></span></td>
       <td>${hit.kind === "file" ? formatBytes(hit.size) : "—"}</td><td>${formatDate(hit.modified_at)}</td>
     </tr>`).join("") : `<tr class="empty-row"><td colspan="5">Nothing matched. Try fewer or shorter words.</td></tr>`;
     body.querySelectorAll("[data-result-drive]").forEach((button) => button.addEventListener("click", () => openDrive(button.dataset.resultDrive)));
+    body.querySelectorAll("[data-copy-path-index]").forEach((button) => {
+      const index = Number(button.dataset.copyPathIndex);
+      const hit = hits[index];
+      const pathNode = button.closest(".path-content").querySelector(".path-text");
+      button.setAttribute("aria-label", `Copy path: ${hit.path}`);
+      button.addEventListener("click", () => copyPath(hit.path, pathNode));
+    });
   } catch (error) {
     showToast(`Search failed: ${error.message}`);
   }
