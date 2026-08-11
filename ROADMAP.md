@@ -4,12 +4,17 @@ ColdShelf is intentionally centered on locating offline media. Items are ordered
 
 ## Near term
 
-- Preserve and merge imported catalog IDs across computers.
 - Use the reproducible million-entry baseline to reduce ingestion allocation and
   indexing cost without weakening atomic snapshots or search correctness.
 - Add optional bounded image thumbnails with an explicit storage budget.
 - Improve automatic drive matching without treating a mutable path as hardware identity.
-- Add signed release provenance and package-manager manifests after binary releases stabilize.
+- Add package-manager manifests after binary releases stabilize.
+
+## Shipped
+
+- `v0.1.6`: preserve stable drive IDs and atomically merge complete snapshots
+  from catalogs created on another computer, with dry-run, idempotency, and
+  explicit name/hash trust policies.
 
 ## Later, only with a safe design
 

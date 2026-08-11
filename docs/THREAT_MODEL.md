@@ -27,6 +27,14 @@ These controls reduce DNS-rebinding and malicious-web-page attacks, but they do 
 
 SQLite foreign keys, uniqueness constraints, enumerated status checks, and atomic snapshot commits prevent a partial scan from replacing the last complete snapshot. WAL and the database files should be backed up together, or JSON export should be used for a portable logical backup.
 
+An imported catalog is treated as untrusted structured data. ColdShelf requires
+a closed source without WAL sidecars, opens it in immutable read-only mode,
+checks SQLite and foreign-key integrity, rejects newer schemas and unsafe or
+inconsistent metadata, detects count overflow, skips incomplete snapshots, and
+commits the target migration and merge atomically. Imported complete SHA-256
+values are removed by default because ColdShelf has not reread the source files;
+preserving those claims requires the explicit `--trust-full-hashes` option.
+
 ### Releases
 
 CI tests Windows, macOS, and Linux. Tagged releases contain SHA-256 checksums and a Syft-generated SPDX JSON SBOM. GitHub's release page and workflow history are the distribution source of record.

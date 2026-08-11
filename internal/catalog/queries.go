@@ -37,7 +37,8 @@ func (c *Catalog) GetSnapshot(ctx context.Context, id int64) (Snapshot, error) {
 }
 
 func (c *Catalog) ListSnapshots(ctx context.Context, driveID string) ([]Snapshot, error) {
-	rows, err := c.db.QueryContext(ctx, snapshotSelect+` WHERE drive_id=? ORDER BY id DESC`, driveID)
+	rows, err := c.db.QueryContext(ctx, snapshotSelect+` WHERE drive_id=?
+		ORDER BY COALESCE(completed_at, started_at) DESC, id DESC`, driveID)
 	if err != nil {
 		return nil, fmt.Errorf("list snapshots: %w", err)
 	}
@@ -343,7 +344,7 @@ func (c *Catalog) ExportJSON(ctx context.Context, w io.Writer) error {
 		Version    int           `json:"version"`
 		ExportedAt time.Time     `json:"exported_at"`
 		Drives     []exportDrive `json:"drives"`
-	}{Version: schemaVersion, ExportedAt: time.Now().UTC(), Drives: []exportDrive{}}
+	}{Version: exportFormatVersion, ExportedAt: time.Now().UTC(), Drives: []exportDrive{}}
 	for _, drive := range drives {
 		item := exportDrive{Drive: drive, Entries: []Entry{}}
 		item.Snapshots, err = c.ListSnapshots(ctx, drive.ID)

@@ -28,6 +28,7 @@ ColdShelf is one executable with an embedded local web interface. There is no se
 - **Prove exact duplicates.** Optional full SHA-256 scanning finds byte-for-byte copies across different drives. Quick fingerprints are never presented as proof.
 - **Connect the database to the hardware.** Each drive gets a stable catalog ID and a printable, scannable QR label with its physical location.
 - **Import an existing Everything index.** Windows users can ingest an [Everything File List (EFU)](docs/EFU_IMPORT.md) instead of rescanning.
+- **Merge catalogs from another computer.** Import every complete snapshot while preserving stable drive IDs, with a [dry-run and explicit conflict policy](docs/CATALOG_IMPORT.md).
 - **Leave whenever you want.** Export the latest catalog as readable JSON or CSV.
 
 ## Quick start
@@ -94,6 +95,7 @@ coldshelf diff DRIVE --from SNAPSHOT --to SNAPSHOT [--json]
 coldshelf label DRIVE [--out label.svg]
 coldshelf export [--format json|csv] [--out FILE]
 coldshelf import-efu FILE --name NAME [--strip-prefix PATH]
+coldshelf import-catalog FILE [--dry-run] [--rename-conflicts] [--trust-full-hashes]
 coldshelf demo [--db FILE] [--serve] [--open]
 ```
 
@@ -116,6 +118,7 @@ flowchart LR
   A["Mounted external drive"] -->|"read-only walk"| B["Scanner"]
   B --> C["SQLite snapshots + FTS5"]
   D["Everything EFU"] --> C
+  H["Another ColdShelf catalog"] -->|"validated atomic merge"| C
   C --> E["Embedded local web UI"]
   C --> F["CLI search / diff / export"]
   C --> G["Printable QR label"]
@@ -146,7 +149,7 @@ ColdShelf focuses on a narrower combination:
 2. a modern browser interface without a browser extension or hosted service;
 3. snapshot history and honest hash semantics;
 4. physical-location notes and QR labels as first-class data;
-5. open exports and an EFU migration path.
+5. open exports plus EFU and cross-computer catalog migration paths.
 
 It is not a file manager, backup program, recovery tool, media preview generator, or replacement for an always-online NAS. It helps you locate the right offline media before you plug it in.
 
@@ -156,8 +159,8 @@ The `v0.1.x` line is an early public release. The on-disk schema is versioned, b
 
 Planned work is tracked in [ROADMAP.md](ROADMAP.md). A reproducible million-entry
 catalog baseline now anchors performance work; the highest-value next steps are
-catalog import/merge, reducing measured ingestion cost, optional thumbnails with
-strict size limits, and a properly authenticated remote mode.
+reducing measured ingestion cost, optional thumbnails with strict size limits,
+and a properly authenticated remote mode.
 
 ## Contributing
 

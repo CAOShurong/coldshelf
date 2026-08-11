@@ -4,6 +4,27 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-08-11
+
+### Added
+
+- Add atomic `import-catalog` merges that preserve stable drive IDs and copy all
+  complete snapshots from another ColdShelf database.
+- Add dry-run and JSON output, source-snapshot identity receipts, deterministic
+  `--rename-conflicts`, reversible imported-hash policy, source-schema/integrity
+  validation, and migration from a real version-1 schema fixture.
+
+### Security
+
+- Require closed, checkpointed imported catalogs and open them in immutable
+  read-only mode without creating WAL sidecars. Validate paths, fingerprints,
+  metadata, timestamps, and overflow-safe declared counts, and roll back the
+  target schema migration and merge together on any error.
+- Remove imported full SHA-256 claims by default because the source files were
+  not reread; `--trust-full-hashes` is an explicit opt-in.
+- Run dry-runs against an in-memory SQLite online backup so neither a missing nor
+  existing target, its directory, or the system temporary directory is changed.
+
 ## [0.1.5] - 2026-08-11
 
 ### Added
@@ -69,7 +90,8 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 - Loopback enforcement, Host/Origin validation, CSP, and documented threat model.
 - Windows, macOS, and Linux CI; CodeQL; deterministic archives; checksums; and release SBOM.
 
-[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/CAOShurong/coldshelf/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/CAOShurong/coldshelf/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/CAOShurong/coldshelf/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/CAOShurong/coldshelf/compare/v0.1.2...v0.1.3

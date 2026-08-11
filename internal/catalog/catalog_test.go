@@ -3,6 +3,7 @@ package catalog_test
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/csv"
 	"encoding/json"
 	"path/filepath"
@@ -82,6 +83,54 @@ func TestCatalogLifecycle(t *testing.T) {
 	records, err := csv.NewReader(&csvExport).ReadAll()
 	if err != nil || len(records) != 3 {
 		t.Fatalf("CSV export: %d records, %v", len(records), err)
+	}
+}
+
+func TestOpenRejectsFutureSchemaWithoutChangingDatabase(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "future.db")
+	db, err := catalog.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.Exec(`PRAGMA journal_mode=DELETE`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.Exec(`UPDATE metadata SET value='99' WHERE key='schema_version'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	before := fileSHA256(t, path)
+	if opened, err := catalog.Open(path); err == nil {
+		opened.Close()
+		t.Fatal("future schema was accepted")
+	}
+	if after := fileSHA256(t, path); after != before {
+		t.Fatalf("future-schema rejection changed database bytes: %s -> %s", before, after)
+	}
+	raw, err = sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer raw.Close()
+	var mode, version string
+	if err := raw.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err != nil {
+		t.Fatal(err)
+	}
+	if err := raw.QueryRow(`SELECT value FROM metadata WHERE key='schema_version'`).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if mode != "delete" || version != "99" {
+		t.Fatalf("future catalog was mutated: mode=%q version=%q", mode, version)
 	}
 }
 
