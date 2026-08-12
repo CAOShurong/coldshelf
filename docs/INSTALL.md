@@ -6,41 +6,54 @@ ColdShelf publishes archives for Windows, macOS, and Linux on the GitHub release
 
 | System | Archive |
 |---|---|
-| Windows on Intel/AMD | `windows_amd64.zip` |
-| Windows on ARM | `windows_arm64.zip` |
-| macOS on Intel | `darwin_amd64.tar.gz` |
-| macOS on Apple silicon | `darwin_arm64.tar.gz` |
-| Linux on Intel/AMD | `linux_amd64.tar.gz` |
-| Linux on ARM64 | `linux_arm64.tar.gz` |
+| Windows on Intel/AMD | `coldshelf_<version>_windows_amd64.zip` |
+| Windows on ARM | `coldshelf_<version>_windows_arm64.zip` |
+| macOS on Intel | `coldshelf_<version>_darwin_amd64.tar.gz` |
+| macOS on Apple silicon | `coldshelf_<version>_darwin_arm64.tar.gz` |
+| Linux on Intel/AMD | `coldshelf_<version>_linux_amd64.tar.gz` |
+| Linux on ARM64 | `coldshelf_<version>_linux_arm64.tar.gz` |
 
 ## 2. Verify SHA-256
 
 Download `SHA256SUMS` from the same release.
 
+Run the commands from a directory containing `SHA256SUMS` and exactly one
+ColdShelf archive for your operating system and architecture. The wildcard
+keeps these instructions valid across releases; the manifest comparison still
+binds the downloaded filename to its exact expected digest.
+
 Windows PowerShell:
 
 ```powershell
-(Get-FileHash .\coldshelf_0.1.0_windows_amd64.zip -Algorithm SHA256).Hash
-Get-Content .\SHA256SUMS
+$archive = @(Get-ChildItem -File .\coldshelf_*_windows_amd64.zip)
+if ($archive.Count -ne 1) { throw "Expected exactly one Windows AMD64 archive" }
+$manifestLine = @(Get-Content .\SHA256SUMS | Where-Object {
+    $parts = $_ -split '\s+', 2
+    $parts.Count -eq 2 -and $parts[1] -eq $archive[0].Name
+})
+if ($manifestLine.Count -ne 1) { throw "Archive is missing or duplicated in SHA256SUMS" }
+$expected = ($manifestLine[0] -split '\s+', 2)[0].ToLowerInvariant()
+$actual = (Get-FileHash -LiteralPath $archive[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actual -ne $expected) { throw "SHA-256 mismatch for $($archive[0].Name)" }
+"OK  $($archive[0].Name)"
 ```
 
-macOS:
+macOS on Apple silicon (use `darwin_amd64` on Intel):
 
 ```console
-shasum -a 256 coldshelf_0.1.0_darwin_arm64.tar.gz
-grep darwin_arm64 SHA256SUMS
+grep 'coldshelf_.*_darwin_arm64.tar.gz$' SHA256SUMS | shasum -a 256 -c -
 ```
 
-Linux:
+Linux on Intel/AMD (use `linux_arm64` on ARM64):
 
 ```console
-sha256sum --check SHA256SUMS
+grep 'coldshelf_.*_linux_amd64.tar.gz$' SHA256SUMS | sha256sum --check -
 ```
 
 GitHub also publishes a signed build-provenance attestation for the archives:
 
 ```console
-gh attestation verify coldshelf_0.1.0_linux_amd64.tar.gz --repo CAOShurong/coldshelf
+gh attestation verify coldshelf_*_linux_amd64.tar.gz --repo CAOShurong/coldshelf
 ```
 
 ## 3. Extract and run
@@ -48,14 +61,16 @@ gh attestation verify coldshelf_0.1.0_linux_amd64.tar.gz --repo CAOShurong/colds
 Windows:
 
 ```powershell
-Expand-Archive .\coldshelf_0.1.0_windows_amd64.zip
-.\coldshelf_0.1.0_windows_amd64\coldshelf.exe version
+$archive = @(Get-ChildItem -File .\coldshelf_*_windows_amd64.zip)
+if ($archive.Count -ne 1) { throw "Expected exactly one Windows AMD64 archive" }
+Expand-Archive -LiteralPath $archive[0].FullName -DestinationPath .\coldshelf
+.\coldshelf\coldshelf.exe version
 ```
 
 macOS or Linux:
 
 ```console
-tar -xzf coldshelf_0.1.0_linux_amd64.tar.gz
+tar -xzf coldshelf_*_linux_amd64.tar.gz
 ./coldshelf version
 ```
 

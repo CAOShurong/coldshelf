@@ -4,6 +4,15 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-08-12
+
+### Fixed
+
+- Make checksum, provenance, and extraction examples select the downloaded
+  release artifact instead of referring to the obsolete `v0.1.0` filename.
+- Fail the PowerShell checksum example unless exactly one matching archive and
+  manifest entry exist, then compare their SHA-256 values automatically.
+
 ## [0.1.6] - 2026-08-11
 
 ### Added
@@ -90,7 +99,8 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 - Loopback enforcement, Host/Origin validation, CSP, and documented threat model.
 - Windows, macOS, and Linux CI; CodeQL; deterministic archives; checksums; and release SBOM.
 
-[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/CAOShurong/coldshelf/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/CAOShurong/coldshelf/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/CAOShurong/coldshelf/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/CAOShurong/coldshelf/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/CAOShurong/coldshelf/compare/v0.1.3...v0.1.4
