@@ -6,9 +6,22 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 )
+
+func TestInstallGuideDoesNotPinReleaseArtifactVersion(t *testing.T) {
+	t.Parallel()
+	guide, err := os.ReadFile(filepath.Join("..", "docs", "INSTALL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pattern := regexp.MustCompile(`coldshelf_[0-9]+\.[0-9]+\.[0-9]+_(windows|darwin|linux)_`)
+	if match := pattern.Find(guide); match != nil {
+		t.Fatalf("install guide pins a release artifact version: %q", match)
+	}
+}
 
 func TestTarArchiveMakesBinaryExecutable(t *testing.T) {
 	t.Parallel()
