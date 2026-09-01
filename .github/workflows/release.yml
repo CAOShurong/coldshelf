@@ -46,7 +46,7 @@ jobs:
           go run ./build/release.go --version "${{ steps.version.outputs.value }}" --output dist
 
       - name: Generate SPDX SBOM
-        uses: anchore/sbom-action@v0.24.0
+        uses: anchore/sbom-action@v0.24.2
         with:
           file: ./dist/coldshelf_${{ steps.version.outputs.value }}_linux_amd64.tar.gz
           format: spdx-json
