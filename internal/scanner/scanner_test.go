@@ -43,6 +43,33 @@ func TestScanMetadataHashAndExclusion(t *testing.T) {
 	}
 }
 
+func TestScanMarksDotfilesHidden(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("secret"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "readme.txt"), []byte("ok"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var entries []catalog.Entry
+	_, err := scanner.Scan(context.Background(), root, scanner.Options{},
+		func(entry catalog.Entry) error { entries = append(entries, entry); return nil }, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hidden := map[string]bool{}
+	for _, entry := range entries {
+		hidden[entry.Name] = entry.Hidden
+	}
+	if !hidden[".env"] {
+		t.Fatal(".env must be marked hidden")
+	}
+	if hidden["readme.txt"] {
+		t.Fatal("readme.txt must not be marked hidden")
+	}
+}
+
 func TestScanRejectsFileRoot(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "not-a-drive")

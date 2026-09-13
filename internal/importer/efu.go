@@ -64,15 +64,15 @@ func EFU(reader io.Reader, stripPrefix string, yield func(catalog.Entry) error) 
 		if catalogPath == "" {
 			continue
 		}
+		attributes := strings.ToUpper(field(record, attributesColumn))
 		entry := catalog.Entry{
 			Path:       catalogPath,
 			ParentPath: parentPath(catalogPath),
 			Name:       path.Base(catalogPath),
-			Hidden:     strings.HasPrefix(path.Base(catalogPath), "."),
+			Hidden:     strings.HasPrefix(path.Base(catalogPath), ".") || strings.Contains(attributes, "H"),
 			Kind:       "file",
 		}
-		attributes := field(record, attributesColumn)
-		if strings.Contains(strings.ToUpper(attributes), "D") || strings.HasSuffix(fullPath, "/") {
+		if strings.Contains(attributes, "D") || strings.HasSuffix(fullPath, "/") {
 			entry.Kind = "directory"
 			result.Directories++
 		} else {

@@ -4,6 +4,14 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+### Fixed
+
+- Treat Windows hidden files as hidden. A scan only looked for a leading
+  `.`, so `desktop.ini` and other FILE_ATTRIBUTE_HIDDEN files were cataloged
+  as ordinary. Everything EFU imports now honor the `H` attribute too.
+- Name a scanned volume root from its drive letter when `--name` is omitted.
+  `coldshelf scan D:\` used to store the drive as `\`.
+
 ## [0.1.7] - 2026-08-12
 
 ### Fixed

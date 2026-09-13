@@ -110,7 +110,6 @@ func Scan(ctx context.Context, root string, options Options, yield YieldFunc, on
 			Path:       catalogPath,
 			ParentPath: parentCatalogPath(catalogPath),
 			Name:       item.Name(),
-			Hidden:     strings.HasPrefix(item.Name(), "."),
 		}
 		if item.Type()&os.ModeSymlink != 0 {
 			entry.Kind = "symlink"
@@ -130,6 +129,7 @@ func Scan(ctx context.Context, root string, options Options, yield YieldFunc, on
 			return nil
 		}
 		entry.ModifiedAt = itemInfo.ModTime().UTC()
+		entry.Hidden = fileIsHidden(item.Name(), itemInfo)
 		if entry.Kind == "file" {
 			entry.Size = itemInfo.Size()
 			entry.Extension = strings.ToLower(strings.TrimPrefix(filepath.Ext(item.Name()), "."))

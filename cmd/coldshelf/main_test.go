@@ -5,11 +5,25 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/CAOShurong/coldshelf/internal/catalog"
 )
+
+func TestDefaultDriveNameUsesVolumeWhenBaseIsASeparator(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		if got := defaultDriveName(`D:\`); got != "D:" {
+			t.Fatalf("got %q, want D:", got)
+		}
+	}
+	if got := defaultDriveName(filepath.Join("archive", "photos")); !strings.HasSuffix(got, "photos") {
+		t.Fatalf("ordinary directory named %q", got)
+	}
+}
 
 func TestNormalizeCommandArgsKeepsBareLaunchInteractive(t *testing.T) {
 	t.Parallel()

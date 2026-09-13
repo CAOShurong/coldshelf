@@ -28,3 +28,20 @@ func TestEFUImport(t *testing.T) {
 		t.Fatalf("unexpected imported entry: %#v", entries[1])
 	}
 }
+
+func TestEFUImportMarksHiddenAttribute(t *testing.T) {
+	t.Parallel()
+	input := "Filename,Size,Date Modified,Attributes\n" +
+		`"E:\Archive\desktop.ini",128,133801632000000000,AH` + "\n"
+	var entries []catalog.Entry
+	_, err := importer.EFU(strings.NewReader(input), `E:\Archive`, func(entry catalog.Entry) error {
+		entries = append(entries, entry)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || !entries[0].Hidden || entries[0].Path != "desktop.ini" {
+		t.Fatalf("expected hidden desktop.ini, got %#v", entries)
+	}
+}
