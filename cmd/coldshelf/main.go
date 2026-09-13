@@ -79,6 +79,21 @@ func normalizeCommandArgs(args []string) []string {
 	return args
 }
 
+func defaultDriveName(root string) string {
+	base := filepath.Base(root)
+	if base != "" && base != "." && base != string(filepath.Separator) && base != "/" && base != `\` {
+		return base
+	}
+	if volume := filepath.VolumeName(root); volume != "" {
+		return strings.TrimSuffix(volume, `\`)
+	}
+	cleaned := strings.Trim(root, `/\`)
+	if cleaned != "" {
+		return cleaned
+	}
+	return root
+}
+
 func printUsage(w io.Writer) {
 	fmt.Fprintln(w, `ColdShelf — know which unplugged drive holds your file
 
@@ -195,7 +210,7 @@ func scanCommand(args []string, stdout, stderr io.Writer) error {
 	} else {
 		driveName := strings.TrimSpace(*name)
 		if driveName == "" {
-			driveName = filepath.Base(root)
+			driveName = defaultDriveName(root)
 		}
 		drive, err = c.CreateDrive(ctx, catalog.NewDrive{
 			Name: driveName, SourcePath: root, Location: *location, Notes: *notes, Tags: splitTags(*tags),

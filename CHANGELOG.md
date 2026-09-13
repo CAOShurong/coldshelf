@@ -4,6 +4,17 @@ All notable changes are documented here. ColdShelf follows semantic versioning a
 
 ## [Unreleased]
 
+### Fixed
+
+- Treat Windows hidden files as hidden. A scan only looked for a leading
+  `.`, so `desktop.ini` and other FILE_ATTRIBUTE_HIDDEN files were cataloged
+  as ordinary. Everything EFU imports now honor the `H` attribute too.
+- Name a scanned volume root from its drive letter when `--name` is omitted.
+  `coldshelf scan D:\` used to store the drive as `\`.
+- Raise the Go toolchain floor to 1.25.13 so `govulncheck` is not failed by
+  patched standard-library issues in 1.25.12 (`crypto/tls`, `net/http`,
+  `encoding/asn1`).
+
 ## [0.1.7] - 2026-08-12
 
 ### Fixed
