@@ -55,7 +55,7 @@ You can also start from the interface: run `coldshelf`, choose **Scan a drive**,
 
 ### Build from source
 
-Go 1.25.12 or newer is enough; the browser interface is already embedded. The
+Go 1.25.13 or newer is enough; the browser interface is already embedded. The
 patch-level minimum keeps release binaries on a Go standard library with the
 current security fixes.
 

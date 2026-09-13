@@ -59,7 +59,7 @@ against catalog code at `0b150c9`, with the candidate benchmark change applied.
 | Variable | Observed value |
 |---|---:|
 | OS | Windows 11 10.0.26200, amd64 |
-| Go | 1.25.12 |
+| Go | 1.25.13 |
 | CPU | Intel Core Ultra 5 125H, 18 logical processors |
 | Temporary volume | E:, WD PC SN560 1 TB NVMe SSD |
 | Entries | 1,000,000 |
